@@ -2,6 +2,20 @@
 
 A high-performance, concurrent REST API built in Go. This system acts as a shared expense tracker that mathematically reduces complex, overlapping group debts into the absolute minimum number of cash flow transactions using a Greedy Algorithm.
 
+## Architecture Diagram
+
+```mermaid
+graph TD
+    Client[Client / Swagger UI] -->|HTTP POST/GET| Gin[Gin Router]
+    Gin --> Handlers[API Handlers]
+    Handlers -->|Locks Memory| Mutex[sync.Mutex]
+    Mutex --> State[(In-Memory Ledger)]
+    Handlers -->|Triggers| Engine[Settlement Engine]
+    Engine -->|Reads Data| State
+    Engine -->|Executes| Algo[Greedy Algorithm]
+    Algo -->|Returns| Client
+```
+
 ## Visual Proof & Performance
 
 ### 1. OpenAPI/Swagger UI Dashboard
