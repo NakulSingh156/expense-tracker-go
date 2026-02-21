@@ -1,0 +1,72 @@
+basePath: /
+definitions:
+  api.ExpenseRequest:
+    properties:
+      amount:
+        type: number
+      participants:
+        items:
+          type: string
+        type: array
+      payer:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a high-performance debt settlement API using a Greedy Algorithm.
+  title: Expense Tracker & Settlement API
+  version: "1.0"
+paths:
+  /balances:
+    get:
+      description: Returns the current outstanding net balances for all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get current balances
+      tags:
+      - balances
+  /expense:
+    post:
+      consumes:
+      - application/json
+      description: Calculates the split and updates the in-memory balances
+      parameters:
+      - description: Expense Details
+        in: body
+        name: expense
+        required: true
+        schema:
+          $ref: '#/definitions/api.ExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Add a new shared expense
+      tags:
+      - expenses
+  /settle:
+    get:
+      description: Runs the greedy algorithm to return the optimized minimum transactions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Settle all debts
+      tags:
+      - settlement
+swagger: "2.0"
