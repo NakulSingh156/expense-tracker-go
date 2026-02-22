@@ -33,48 +33,130 @@ graph TD
 ---
 
 ## Methodology: From Zero to Deployment
-This project was architected in four distinct engineering phases to ensure scalability, thread safety, and standard enterprise documentation.
+
+This project was architected in distinct engineering phases to ensure scalability, thread safety, and enterprise readiness.
 
 ### Phase 1: Domain Modeling & Memory Management
-* **Static Typing:** Defined strict Go `structs` to represent `ExpenseRequests`, `Balances`, and `Transactions`.
-* **State Management:** Implemented an in-memory Hash Map to track user ledgers dynamically without the latency overhead of a traditional disk-based database during the prototyping phase.
+
+Static Typing: Defined strict Go structs to represent ExpenseRequests, Balances, and Transactions.
+
+State Management: Implemented an in-memory Hash Map to track user ledgers dynamically, prioritizing pure algorithmic speed over database latency during prototyping.
 
 ### Phase 2: Algorithmic Optimization (Core Engine)
-* **The Problem:** Standard peer-to-peer payments create cyclical debt graphs (e.g., A owes B, B owes C, C owes A).
-* **The Solution:** Implemented a **Greedy Algorithm** to solve the Minimum Cash Flow problem.
-* **Execution:** 1. Calculates the net position of every entity.
-  2. Partitions entities into `Debtors` (net negative) and `Creditors` (net positive).
-  3. Recursively matches the maximum debtor with the maximum creditor until the ledger zeroes out.
-* **Time Complexity:** `O(N log N)` due to the sorting mechanism applied during the greedy matching phase.
+
+The Problem: Standard peer-to-peer payments create cyclical debt graphs.
+
+The Solution: Implemented a Greedy Algorithm to solve the Minimum Cash Flow problem.
+
+Execution: Separates users into Debtors and Creditors, recursively matching the maximum debtor with the maximum creditor until the ledger zeroes out.
+
+Time Complexity: O(N log N) due to the sorting mechanism.
 
 ### Phase 3: Concurrent API Layer
-* **Framework:** Utilized the **Gin HTTP framework** to expose the algorithmic engine via RESTful endpoints (`POST /expense`, `GET /balances`, `GET /settle`).
-* **Thread Safety:** Because Go handles HTTP requests concurrently via Goroutines, a `sync.Mutex` was wrapped around the in-memory ledger. This prevents data race conditions and fatal concurrent map write errors under heavy traffic loads.
 
-### Phase 4: OpenAPI Documentation Deployment
-* **Implementation:** Integrated `swaggo/swag` and `swaggo/gin-swagger` to parse declarative block comments above handler functions.
-* **Deployment:** Auto-generated a `swagger.json` specification file and served an interactive Swagger webpage directly from the Gin router, allowing frontend teams to test the API without external API clients like Postman.
+Framework: Utilized the Gin HTTP framework to expose the algorithmic engine.
+
+Thread Safety: Wrapped the in-memory ledger in a sync.Mutex to prevent data race conditions during concurrent high-volume HTTP requests.
+
+### Phase 4: Enterprise Security & Testing (NEW)
+
+Input Validation: Implemented Gin binding tags to enforce strict JSON payload rules (e.g., rejecting negative amounts or empty arrays) to prevent server panics.
+
+Unit Testing: Integrated native Go tests (testing package) to mathematically verify the accuracy of the settlement algorithm.
+
+### Phase 5: OpenAPI & Containerization (NEW)
+
+Documentation: Auto-generated a swagger.json specification file and served an interactive Swagger webpage directly from the Gin router.
+
+Deployment: Packaged the application using a multi-stage Dockerfile, resulting in a microscopic, cloud-ready Alpine Linux image.
 
 ---
 
 ## Tech Stack
-* **Language:** Go (Golang)
-* **Web Framework:** Gin
-* **Concurrency:** Native Goroutines & `sync.Mutex`
-* **API Documentation:** Swaggo (Swagger/OpenAPI 2.0)
+
+* Language: Go 1.21+
+
+* Web Framework: Gin
+
+* Concurrency: Goroutines & sync.Mutex
+
+* API Documentation: Swaggo (OpenAPI 2.0)
+
+* DevOps: Docker (Multi-stage builds)
+
+* Testing: Go Native Testing
 
 ---
 
+## API Reference
+Base URL: http://localhost:8080
+
+### 1. Add Expense
+
+POST /expense
+Divides the bill equally among all participants and credits the payer.
+
+{
+  "payer": "Alice",
+  "amount": 300.00,
+  "participants": ["Alice", "Bob", "Charlie"]
+}
+
+
+### 2. Get Current Balances
+
+GET /balances
+Returns the live net position of all users.
+
+{
+  "current_balances": {
+    "Alice": 200,
+    "Bob": -100,
+    "Charlie": -100
+  }
+}
+
+
+### 3. Settle Debts
+
+GET /settle
+Executes the Greedy Algorithm to return the optimized payment plan.
+
+{
+  "message": "Debts optimized successfully",
+  "optimized_transactions": [
+    {"from": "Charlie", "to": "Alice", "amount": 100},
+    {"from": "Bob", "to": "Alice", "amount": 100}
+  ]
+}
+
 ## Quick Start Setup
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/NakulSingh156/expense-tracker-go.git](https://github.com/NakulSingh156/expense-tracker-go.git)
-   cd expense-tracker-go
+
+### Option 1: Run Locally
+
+* Clone the repository and navigate into it.
+
 Install dependencies:
 
-go mod tidy
-Run the server:
+* go mod tidy
 
-go run main.go
-Open the Swagger UI in your browser to interact with the API:
- http://localhost:8080/swagger/index.html
+
+Run the unit tests:
+
+* go test ./internal/algorithm/ -v
+
+
+Start the server:
+
+* go run cmd/server/main.go
+
+
+### Option 2: Run via Docker
+
+
+docker build -t expense-api .
+docker run -p 8080:8080 expense-api
+
+
+Access the Swagger UI: http://localhost:8080/swagger/index.html
+
